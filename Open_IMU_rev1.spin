@@ -21,8 +21,8 @@ CON
   INVERSE_ZRANGE = 2.0 / (COMPASS_ZMAX - COMPASS_ZMIN)
 
   SAMPLE_FREQ = 512.0
-  TWO_KP_DEF = 2.0 * 0.5
-  TWO_KI_DEF = 2.0 * 0.0
+  TWO_KP_DEF = 2.0 * 0.05
+  TWO_KI_DEF = 2.0 * 0.00
 
   GYRO_SCALE = 0.07
                          
@@ -57,8 +57,7 @@ VAR
 
   long floatMagX, floatMagY, floatMagZ
   long smoothAccX, smoothAccY, smoothAccZ
-  long accToFilterX, accToFilterY, accToFilterZ
-
+  
   long xMag, yMag, zMag
 
   long i, recipNorm
@@ -71,6 +70,8 @@ VAR
   long halfvx, halfvy, halfvz, halfwx, halfwy, halfwz
   long halfex, halfey, halfez
   long qa, qb, qc
+
+  long debug
   
 OBJ
 
@@ -85,30 +86,63 @@ PUB Init
 
   IMU.start(SCL,SDA)
   fm.start
-  PST.start(115200)
+  PST.start(250000)
   PST.Clear
-   
+
+  debug := True
+
   Main
 
-PUB Main
-
+PUB SetupDisplay
+  
   PST.home
   PST.str(string("OpenIMU - Propeller Implementation"))
   PST.newline
-  
 
+  printHeading(35, 1, string("----Main----"))
+  printHeading(35, 16, string("Pitch: "))
+  printHeading(35, 17, string("Roll: "))
+  printHeading(35, 18, string("Yaw: "))
+  
+  printHeading(0, 0, string("----IMUInit----"))
+  printHeading(0, 1, string("->Calibrating Iteration: "))
+  printHeading(0, 2, string("rawMagX: "))
+  printHeading(0, 3, string("rawMagY: "))
+  printHeading(0, 4, string("rawMagZ: "))
+  printHeading(0, 5, string("rawAcclX: "))
+  printHeading(0, 6, string("rawAcclY: "))
+  printHeading(0, 7, string("rawAcclZ: "))
+  printHeading(0, 8, string("rawGyroX: "))
+  printHeading(0, 9, string("rawGyroY: "))
+  printHeading(0, 10, string("rawGyroZ: "))
+  printHeading(0, 11, string("smoothAccX: "))
+  printHeading(0, 12, string("smoothAccY: "))
+  printHeading(0, 13, string("smoothAccZ: "))
+
+  printHeading(0, 16, string("Gyro Summing Iteration"))
+  printHeading(0, 17, string("smoothAccX: "))
+  printHeading(0, 18, string("smoothAccY: "))
+  printHeading(0, 19, string("smoothAccZ: "))
+  printHeading(0, 20, string("gyroSumX: "))
+  printHeading(0, 21, string("gyroSumY: "))
+  printHeading(0, 22, string("gyroSumZ: "))
+
+  printHeading(0, 25, string("offSetX: "))
+  printHeading(0, 26, string("offSetY: "))
+  printHeading(0, 27, string("offSetZ: "))
+
+  printHeading(0, 36, string("floatMagX: "))
+  printHeading(0, 37, string("floatMagY: "))
+  printHeading(0, 38, string("floatMagZ: "))
+  printHeading(0, 39, string("xMag: "))
+  printHeading(0, 40, string("yMag: "))
+  printHeading(0, 41, string("yaw: "))
+   
+PUB Main
+
+  SetupDisplay
+  
   IMUinit
-
-  PST.position(35, 1)
-  PST.str(string("----Main----"))
-
-  PST.position(35, 16)
-  PST.str(string("Pitch: "))
-  PST.position(35, 17)
-  PST.str(string("Roll: "))
-  PST.position(35, 18)
-  PST.str(string("Yaw: "))
-  
   
   repeat
     rawMagX := fm.ffloat(IMU.getMx)
@@ -122,37 +156,7 @@ PUB Main
     rawGyroX := fm.ffloat(IMU.getRx)
     rawGyroY := fm.ffloat(IMU.getRy)
     rawGyroZ := fm.ffloat(IMU.getRz)
-    
-    PST.position(35,3)
-    PST.str(fs.floattostring(rawMagX))
-    PST.clearEnd
-    PST.position(35,4)
-    PST.str(fs.floattostring(rawMagY))
-    PST.clearEnd
-    PST.position(35,5)
-    PST.str(fs.floattostring(rawMagZ))
-    PST.clearEnd    
-     
-    PST.position(35,6)
-    PST.str(fs.floattostring(rawAcclX))
-    PST.clearEnd
-    PST.position(35,7)
-    PST.str(fs.floattostring(rawAcclY))
-    PST.clearEnd
-    PST.position(35,8)
-    PST.str(fs.floattostring(rawAcclZ))
-    PST.clearEnd
-     
-    PST.position(35,9)
-    PST.str(fs.floattostring(rawGyroX))
-    PST.clearEnd
-    PST.position(35,10)
-    PST.str(fs.floattostring(rawGyroY))
-    PST.clearEnd
-    PST.position(35,11)
-    PST.str(fs.floattostring(rawGyroZ))
-    PST.clearEnd
-         
+
     floatMagX := fm.fsub(fm.fmul(fm.fsub(rawMagX, COMPASS_XMIN), INVERSE_XRANGE), 1.0)
     floatMagY := fm.fsub(fm.fmul(fm.fsub(rawMagY, COMPASS_YMIN), INVERSE_YRANGE), 1.0)
     floatMagZ := fm.fsub(fm.fmul(fm.fsub(rawMagZ, COMPASS_ZMIN), INVERSE_ZRANGE), 1.0)
@@ -160,21 +164,21 @@ PUB Main
     smoothAccX := smoothing(rawAcclX, smoothAccX)
     smoothAccY := smoothing(rawAcclY, smoothAccY)
     smoothAccZ := smoothing(rawAcclZ, smoothAccZ)
-   
-    PST.position(35,12)
-    PST.str(fs.floattostring(smoothAccX))
-    PST.clearEnd
-    PST.position(35,13)
-    PST.str(fs.floattostring(smoothAccY))
-    PST.clearEnd
-    PST.position(35,14)
-    PST.str(fs.floattostring(smoothAccZ))
-    PST.clearEnd
 
-    accToFilterX := smoothAccX
-    accToFilterY := smoothAccY
-    accToFilterZ := smoothAccZ
-   
+    if debug == True
+      printDataFP(35, 3, rawMagX)
+      printDataFP(35, 4, rawMagY)
+      printDataFP(35, 5, rawMagZ)
+      printDataFP(35, 6, rawAcclX)
+      printDataFP(35, 7, rawAcclY)
+      printDataFP(35, 8, rawAcclZ)
+      printDataFP(35, 9, rawGyroX)
+      printDataFP(35, 10, rawGyroY)
+      printDataFP(35, 11, rawGyroZ)
+      printDataFP(35, 12, smoothAccX)
+      printDataFP(35, 12, smoothAccY)
+      printDataFP(35, 12, smoothAccZ)
+
     AHRSupdate
 
     GetEuler
@@ -183,249 +187,105 @@ PUB Main
 
 PRI UpdateDisplay | pitch2, roll2
 
-  PST.position(42,16)
-  PST.str(fs.floattostring(pitch))
-  PST.clearEnd
-  PST.position(41,17)
-  PST.str(fs.floattostring(roll))
-  PST.clearEnd
-  PST.position(40,18)
-  PST.str(fs.floattostring(yaw))
-  PST.clearEnd
-
-  PST.position(0,48)
-  PST.str(fs.floattostring(q0))
-  PST.position(15,48)
-  PST.str(fs.floattostring(q1))
-  PST.position(30,48)
-  PST.str(fs.floattostring(q2))
-  PST.position(45,48)
-  PST.str(fs.floattostring(q3))
-  PST.clearEnd
-
   pitch2 := fm.Degrees(atan2(rawAcclX, fm.fsqr(fm.fadd(fm.fmul(rawAcclY, rawAcclY), fm.fmul(rawAcclZ, rawAcclZ)))))
-  PST.position(7,30)
-  pst.str(fs.floattostring(pitch2))
-  PST.clearEnd
-  
   roll2 := fm.Degrees(atan2(fm.fmul(-1.0, rawAcclY), fm.fsqr(fm.fadd(fm.fmul(rawAcclX, rawAcclX), fm.fmul(rawAcclZ, rawAcclZ)))))
-  PST.position(6,31)
-  pst.str(fs.floattostring(roll2))   
-  PST.clearEnd
-  
 
+  if debug == True
+    printDataFP(42, 16, pitch)
+    printDataFP(41, 17, roll)
+    printDataFP(40, 18, yaw)
+    printDataFP(0, 48, q0)
+    printDataFP(15, 48, q1)
+    printDataFP(30, 48, q2)
+    printDataFP(45, 48, q3)
+    printDataFP(7, 30, pitch2)
+    printDataFP(3, 31, roll2)
     
 PRI IMUinit
 
-  PST.str(string("----IMUInit----"))
-  PST.newline
-  PST.str(string("->Calibrating Iteration: "))
-  PST.newline
-  PST.str(string("rawMagX: "))
-  PST.newline
-  PST.str(string("rawMagY: "))
-  PST.newline
-  PST.str(string("rawMagZ: "))
-  PST.newline
-  
-  PST.str(string("rawAcclX: "))
-  PST.newline
-  PST.str(string("rawAcclY: "))
-  PST.newline
-  PST.str(string("rawAcclZ: "))
-  PST.newline
-  
-  PST.str(string("rawGyroX: "))
-  PST.newline
-  PST.str(string("rawGyroY: "))
-  PST.newline
-  PST.str(string("rawGyroZ: "))
-  PST.newline
-
-  PST.str(string("smoothAccX: "))
-  PST.newline
-  PST.str(string("smoothAccY: "))
-  PST.newline
-  PST.str(string("smoothAccZ: "))  
-  
-  repeat i from 0 to 500
-    PST.position(25,2)
-    PST.dec(i)
-    PST.clearEnd  
-    
+  repeat i from 0 to 100
     rawMagX := fm.ffloat(IMU.getMx)
     rawMagY := fm.ffloat(IMU.getMy)
     rawMagZ := fm.ffloat(IMU.getMz)
-
-    PST.position(9,3)
-    PST.str(fs.floattostring(rawMagX))
-    PST.clearEnd
-    PST.position(9,4)
-    PST.str(fs.floattostring(rawMagY))
-    PST.clearEnd
-    PST.position(9,5)
-    PST.str(fs.floattostring(rawMagZ))
-    PST.clearEnd    
-   
+    
     rawAcclX := fm.ffloat(IMU.getAx)
     rawAcclY := fm.ffloat(IMU.getAy)
     rawAcclZ := fm.ffloat(IMU.getAz)
-
-    PST.position(10,6)
-    PST.str(fs.floattostring(rawAcclX))
-    PST.clearEnd
-    PST.position(10,7)
-    PST.str(fs.floattostring(rawAcclY))
-    PST.clearEnd
-    PST.position(10,8)
-    PST.str(fs.floattostring(rawAcclZ))
-    PST.clearEnd
-   
+    
     rawGyroX := fm.ffloat(IMU.getRx)
     rawGyroY := fm.ffloat(IMU.getRy)
     rawGyroZ := fm.ffloat(IMU.getRz)
-
-    PST.position(10,9)
-    PST.str(fs.floattostring(rawGyroX))
-    PST.clearEnd
-    PST.position(10,10)
-    PST.str(fs.floattostring(rawGyroY))
-    PST.clearEnd
-    PST.position(10,11)
-    PST.str(fs.floattostring(rawGyroZ))
-    PST.clearEnd
     
     smoothAccX := smoothing(rawAcclX, smoothAccX)
     smoothAccY := smoothing(rawAcclY, smoothAccY)
     smoothAccZ := smoothing(rawAcclZ, smoothAccZ)
 
-    PST.position(12,12)
-    PST.str(fs.floattostring(smoothAccX))
-    PST.clearEnd
-    PST.position(12,13)
-    PST.str(fs.floattostring(smoothAccY))
-    PST.clearEnd
-    PST.position(12,14)
-    PST.str(fs.floattostring(smoothAccZ))
-    PST.clearEnd
-    
-    waitcnt(MILLI * 3 + cnt)
+    if debug == True     
+      printData(25, 1, i)
+      printDataFP(9, 2, rawMagX)
+      printDataFP(9, 3, rawMagY)
+      printDataFP(9, 4, rawMagZ)
+      printDataFP(10, 5, rawAcclX)
+      printDataFP(10, 6, rawAcclY)
+      printDataFP(10, 7, rawAcclZ)
+      printDataFP(10, 8, rawGyroX)
+      printDataFP(10, 9, rawGyroY)
+      printDataFP(10, 10, rawGyroZ)
+      printDataFP(12, 11, smoothAccX)
+      printDataFP(12, 12, smoothAccY)
+      printDataFP(12, 13, smoothAccZ)
 
-  PST.position(25,2)
-  PST.str(string("Done"))
-  PST.clearEnd
+    waitcnt(MILLI * 3 + cnt)
   
-  PST.position(0,16)
-  PST.str(string("Gyro Summing Iteration: "))
-  PST.newLine
-  
+  if debug == True
+    printHeading(25, 1, string("Done"))
+    
   gyroSumX := gyroSumY := gyroSumZ := 0
 
-  PST.str(string("smoothAccX: "))
-  PST.newLine
-  PST.str(string("smoothAccY: "))
-  PST.newLine
-  PST.str(string("smoothAccZ: "))
-  PST.newLine
-  PST.str(string("gyroSumX: "))
-  PST.newLine
-  PST.str(string("gyroSumY: "))
-  PST.newLine
-  PST.str(string("gyroSumZ: "))
-  
-  repeat i from 0 to 500
-    PST.position(24,16)
-    PST.dec(i)
-    PST.clearEnd
-    
+  repeat i from 0 to 100
     smoothAccX := smoothing(rawAcclX, smoothAccX)
     smoothAccY := smoothing(rawAcclY, smoothAccY)
     smoothAccZ := smoothing(rawAcclZ, smoothAccZ)
-
-    PST.position(12,17)
-    PST.str(fs.floattostring(smoothAccX))
-    PST.clearEnd
-    PST.position(12,18)
-    PST.str(fs.floattostring(smoothAccY))
-    PST.clearEnd
-    PST.position(12,19)
-    PST.str(fs.floattostring(smoothAccZ))
-    PST.clearEnd          
 
     gyroSumX += IMU.getRx
     gyroSumY += IMU.getRy
     gyroSumZ += IMU.getRz
 
-    PST.position(10,20)
-    PST.dec(gyroSumX)
-    PST.clearEnd
-    PST.position(10,21)
-    PST.dec(gyroSumY)
-    PST.clearEnd
-    PST.position(10,22)
-    PST.dec(gyroSumZ)
-    PST.clearEnd          
-
+    if debug == True                 
+      printData(24, 16, i)
+      printDataFP(12, 17, smoothAccX)
+      printDataFP(12, 18, smoothAccY)
+      printDataFP(12, 19, smoothAccZ)
+      printDataFP(10, 20, gyroSumX)
+      printDataFP(10, 21, gyroSumY)
+      printDataFP(10, 22, gyroSumZ)
+      
     waitcnt(MILLI * 3 + cnt)
 
-  PST.position(24,16)
-  PST.str(string("Done"))
-  PST.clearEnd
-
-  PST.position(0,24)
-  PST.str(string("Finding gyro offset: "))
-  PST.newLine
-  PST.str(string("offSetX: "))
-  PST.newLine
-  PST.str(string("offSetY: "))
-  PST.newLine
-  PST.str(string("offSetZ: "))
-  
+  if debug == True
+    printHeading(24, 16, string("Done"))
+    printHeading(0, 24, string("Finding gyro offset: "))
+    
   offSetX := fm.fdiv(fm.ffloat(gyroSumX), 500.0)
   offSetY := fm.fdiv(fm.ffloat(gyroSumY), 500.0)
   offSetZ := fm.fdiv(fm.ffloat(gyroSumZ), 500.0)
 
-  pst.position(9,25)
-  PST.str(fs.floattostring(offSetX))
-  PST.clearEnd
-  pst.position(9,26)
-  PST.str(fs.floattostring(offSetY))
-  PST.clearEnd
-  pst.position(9,27)
-  PST.str(fs.floattostring(offSetZ))
-  PST.clearEnd
-
-  PST.position(21,24)
-  PST.str(string("Done"))
-
-  PST.position(0,29)
-  PST.str(string("Finding pitch and roll: "))
-  PST.newLine
-  PST.str(string("pitch: "))
-  PST.newLine
-  PST.str(string("roll: "))
+  if debug == True
+    printDataFP(9, 25, offSetX)
+    printDataFP(9, 26, offSetY)
+    printDataFP(9, 27, offSetZ)
+    printHeading(21, 24, string("Done"))
+    printHeading(0, 29, string("Finding pitch and roll: "))
   
-  PST.position(29,29)
-  PST.str(string("pitch"))
-  PST.clearEnd
-           
   pitch := fm.Degrees(atan2(rawAcclX, fm.fsqr(fm.fadd(fm.fmul(rawAcclY, rawAcclY), fm.fmul(rawAcclZ, rawAcclZ)))))
-  PST.position(7,30)
-  pst.str(fs.floattostring(pitch))
-  PST.clearEnd
-  
-  PST.position(29,29)
-  PST.str(string("roll"))
-  PST.clearEnd
-  
   roll := fm.Degrees(atan2(fm.fmul(-1.0, rawAcclY), fm.fsqr(fm.fadd(fm.fmul(rawAcclX, rawAcclX), fm.fmul(rawAcclZ, rawAcclZ)))))
-  PST.position(6,31)
-  pst.str(fs.floattostring(roll))   
-  PST.clearEnd
-  
-  PST.position(29,29)
-  PST.str(string("correcting pitch and roll"))
-  PST.clearEnd
+
+  if debug == True
+    printHeading(0, 30, string("pitch: "))
+    printHeading(0, 31, string("roll"))
+    printDataFP(7, 30, pitch)
+    printDataFP(6, 31, roll)
+    printHeading(29, 29, string("correcting pitch and roll"))
   
   if rawAcclZ > 0
     if rawAcclX > 0
@@ -438,159 +298,95 @@ PRI IMUinit
     else
       roll := fm.fsub(180.0, roll)
 
-  PST.position(7,30)
-  pst.str(fs.floattostring(pitch))
-  PST.clearEnd
-  
-  PST.position(6,31)
-  pst.str(fs.floattostring(roll))   
-  PST.clearEnd
-
-  PST.position(29,29)
-  PST.str(string("Done"))
-  PST.clearEnd
-
-  PST.position(0,34)
-  PST.str(string("Finding Yaw: "))
-
-  PST.position(13,34)
-  PST.str(string("finding floatMag"))
-  PST.clearEnd
-
-  pst.newLine
-  PST.str(string("floatMagX: ")) 
-  PST.newLine
-  PST.str(string("floatMagY: "))
-  PST.newLine
-  PST.str(string("floatMagZ: "))
-  PST.newLine
-  PST.str(string("xMag: "))
-  PST.newLine
-  PST.str(string("yMag: "))
-  PST.newLine
-  PST.str(string("yaw: "))
-  PST.newLine
-  
+  if debug == True
+    printDataFP(7, 30, pitch)
+    printDataFP(6, 31, roll)
+    printHeading(29, 29, string("Done"))
+    printHeading(0, 34, string("Finding Yaw"))
+    printHeading(0, 35, string("finding floatMag"))
+    
   floatMagX := fm.fsub(fm.fmul(fm.fsub(rawMagX, COMPASS_XMIN), INVERSE_XRANGE), 1.0)
-  PST.position(11,35)
-  pst.str(fs.floattostring(floatMagX))   
-  PST.clearEnd
-  
   floatMagY := fm.fsub(fm.fmul(fm.fsub(rawMagY, COMPASS_YMIN), INVERSE_YRANGE), 1.0)
-  PST.position(11,36)
-  pst.str(fs.floattostring(floatMagY))   
-  PST.clearEnd
-
   floatMagZ := fm.fsub(fm.fmul(fm.fsub(rawMagZ, COMPASS_ZMIN), INVERSE_ZRANGE), 1.0)
-  PST.position(11,37)
-  pst.str(fs.floattostring(floatMagZ))   
-  PST.clearEnd
-  
-  PST.position(13,34)
-  PST.str(string("tilt compensating compass"))
-  PST.clearEnd
+                                  
+  if debug == True
+    printDataFP(11, 35, floatMagX)
+    printDataFP(11, 36, floatMagY)
+    printDataFP(11, 37, floatMagZ)
+    printHeading(13, 34, string("tilt compensating compass"))
   
   xMag := fm.fadd(fm.fmul(floatMagX, fm.cos(fm.radians(pitch))), fm.fmul(floatMagZ, fm.sin(fm.radians(pitch))))
-  PST.position(6,38)
-  pst.str(fs.floattostring(xMag))   
-  PST.clearEnd
-
   yMag := fm.fmul(-1.0, fm.fsub(fm.fadd(fm.fmul(fm.fmul(floatMagX, fm.sin(fm.radians(roll))), fm.sin(fm.radians(pitch))), fm.fmul(floatMagY, fm.cos(fm.radians(roll)))), fm.fmul(fm.fmul(floatMagZ, fm.sin(fm.radians(roll))), fm.cos(fm.radians(pitch)))))
-  PST.position(6,39)
-  pst.str(fs.floattostring(yMag))   
-  PST.clearEnd
 
-  PST.position(13,34)
-  PST.str(string("finding yaw"))
-  PST.clearEnd
+  if debug == True
+    printDataFP(6, 38, xMag)
+    printDataFP(6, 39, yMag)
+    
+    printHeading(13, 34, string("finding yaw"))
   
   yaw := fm.degrees(atan2(yMag, xMag))
-
   if yaw < 0.0
     yaw := fm.fadd(yaw, 360.0)
 
-  PST.position(5,40)
-  PST.str(fs.floattostring(yaw))
-  PST.clearEnd
-
-  PST.position(13,34)
-  PST.str(string("Done"))
-  PST.clearEnd
-
-  PST.position(0,42)
-  PST.str(string("Finding rotation matrix: "))
+  if debug == True
+    printDataFP(5, 40, yaw)
+    printHeading(13, 34, string("Done"))
+    printHeading(0, 42, string("Finding rotation matrix :"))
     
   cosPitch := fm.cos(fm.radians(pitch))
-  sinPitch := fm.sin(fm.radians(pitch))
-  
+  sinPitch := fm.sin(fm.radians(pitch))                   
   cosRoll := fm.cos(fm.radians(roll))
-  sinRoll := fm.sin(fm.radians(roll))                   
-  
+  sinRoll := fm.sin(fm.radians(roll))                     
   cosYaw := fm.cos(fm.radians(yaw))
   sinYaw := fm.sin(fm.radians(yaw))
 
-  printDataLabelFP(30, 35, string("cosPitch: "), cosPitch)
-  PST.position(30,35)
-  PST.str(string("cosPitch: "))
-  PST.str(fs.floattostring(cosPitch))
-  PST.position(30,36)
-  PST.str(string("sinPitch: "))
-  PST.str(fs.floattostring(sinPitch))
-  PST.position(30,37)
-  PST.str(string("cosRoll: "))
-  PST.str(fs.floattostring(cosRoll))
-  PST.position(30,38)
-  PST.str(string("sinRoll: "))
-  PST.str(fs.floattostring(sinRoll))
-  PST.position(30,39)
-  PST.str(string("cosYaw: "))
-  PST.str(fs.floattostring(cosYaw))
-  PST.position(30,40)
-  PST.str(string("sinYaw: "))
-  PST.str(fs.floattostring(sinYaw))
+  if debug == True
+    printDataLabelFP(30, 35, string("cosPitch: "), cosPitch)
+    printDataLabelFP(30, 36, string("sinPitch: "), sinPitch)
+    printDataLabelFP(30, 37, string("cosRoll: "), cosRoll)
+    printDataLabelFP(30, 38, string("sinRoll: "), sinRoll)
+    printDataLabelFP(30, 39, string("cosYaw: "), cosYaw)
+    printDataLabelFP(30, 40, string("sinYaw: "), sinYaw)
 
   r11 := fm.fmul(cosPitch, cosYaw)
   r21 := fm.fmul(cosPitch, sinYaw)
   r31 := fm.fmul(-1.0, sinPitch)
-
   r12 := fm.fadd(fm.fmul(-1.0, fm.fmul(cosRoll, sinYaw)), fm.fmul(fm.fmul(sinRoll, sinPitch), cosYaw))
   r22 := fm.fadd(fm.fmul(cosRoll, cosYaw), fm.fmul(fm.fmul(sinRoll, sinPitch), sinYaw))
   r32 := fm.fmul(sinRoll, cosPitch)
-
   r13 := fm.fadd(fm.fmul(sinRoll, sinYaw), fm.fmul(fm.fmul(cosRoll, sinPitch), cosYaw))
   r23 := fm.fadd(fm.fmul(-1.0, fm.fmul(sinRoll, cosYaw)), fm.fmul(fm.fmul(cosRoll, sinPitch), sinYaw))
   r33 := fm.fmul(cosRoll, cosPitch)
 
-  printDataFP(0, 43, r11)
-  printDataFP(15, 43, r12)
-  printDataFP(30, 43, r13)
-
-  printDataFP(0, 44, r21)
-  printDataFP(15, 44, r22)
-  printDataFP(30, 44, r23)
-
-  printDataFP(0, 45, r31)
-  printDataFP(15, 45, r32)
-  printDataFP(30, 45, r33)
+  if debug == True
+    printDataFP(0, 43, r11)
+    printDataFP(15, 43, r12)
+    printDataFP(30, 43, r13)
+    printDataFP(0, 44, r21)
+    printDataFP(15, 44, r22)
+    printDataFP(30, 44, r23)
+    printDataFP(0, 45, r31)
+    printDataFP(15, 45, r32)
+    printDataFP(30, 45, r33)
   
   q0 := fm.fmul(0.5, fm.fsqr(fm.fadd(fm.fadd(1.0, r11), fm.fadd(r22, r33))))
   q1 := fm.fdiv(fm.fsub(r32, r23), fm.fmul(4.0, q0))
   q2 := fm.fdiv(fm.fsub(r13, r31), fm.fmul(4.0, q0)) 
   q3 := fm.fdiv(fm.fsub(r21, r12), fm.fmul(4.0, q0))
-                                            
-  printHeading(0, 47, string("Quaternions"))
-  
-  printDataFP(0, 48, q0)
-  printDataFP(15, 48, q1)
-  printDataFP(30, 48, q2)
-  printDataFP(45, 48, q3)                 
+
+  if debug == True                                        
+    printHeading(0, 47, string("Quaternions"))
+    printDataFP(0, 48, q0)
+    printDataFP(15, 48, q1)
+    printDataFP(30, 48, q2)
+    printDataFP(45, 48, q3)                 
 
   repeat until PST.charIn == "D"
 
 PRI printDataLabelFP(row, column, label, data)
 
   PST.position(row, column)
-  PST.str(data)
+  PST.str(label)
   PST.str(fs.floattostring(data))
   PST.clearEnd
 
@@ -599,12 +395,22 @@ PRI printHeading(row, column, data)
   PST.position(row, column)
   PST.str(data)
   PST.clearEnd
+
+PRI printHeadingNL(data)
+
+  PST.str(data)
+  PST.newLine
   
 PRI printLabel(row, column, data)
 
   PST.position(row, column)
   PST.str(data)
-  
+
+PRI printData(row, column, data)
+
+  PST.position(row, column)
+  PST.dec(data)
+   
 PRI printDataFP(row, column, data)
 
   PST.position(row, column)
