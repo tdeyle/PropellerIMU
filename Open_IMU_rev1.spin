@@ -1,5 +1,5 @@
 '' Open_IMU
-'' based on Madgwick Algorithm for MARG
+'' based on Madgwick Algorithm for MARG - uses Mayhony's DCM filtering algo.
 
 CON
 
@@ -166,18 +166,18 @@ PUB Main
     smoothAccZ := smoothing(rawAcclZ, smoothAccZ)
 
     if debug == True
-      printDataFP(35, 3, rawMagX)
-      printDataFP(35, 4, rawMagY)
-      printDataFP(35, 5, rawMagZ)
-      printDataFP(35, 6, rawAcclX)
-      printDataFP(35, 7, rawAcclY)
-      printDataFP(35, 8, rawAcclZ)
-      printDataFP(35, 9, rawGyroX)
-      printDataFP(35, 10, rawGyroY)
-      printDataFP(35, 11, rawGyroZ)
-      printDataFP(35, 12, smoothAccX)
+      printDataFP(35, 2, rawMagX)
+      printDataFP(35, 3, rawMagY)
+      printDataFP(35, 4, rawMagZ)
+      printDataFP(35, 5, rawAcclX)
+      printDataFP(35, 6, rawAcclY)
+      printDataFP(35, 7, rawAcclZ)
+      printDataFP(35, 8, rawGyroX)
+      printDataFP(35, 9, rawGyroY)
+      printDataFP(35, 10, rawGyroZ)
+      printDataFP(35, 11, smoothAccX)
       printDataFP(35, 12, smoothAccY)
-      printDataFP(35, 12, smoothAccZ)
+      printDataFP(35, 13, smoothAccZ)
 
     AHRSupdate
 
